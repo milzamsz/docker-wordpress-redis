@@ -37,11 +37,11 @@ services:
 
         define('DISABLE_WP_CRON', true);
 
-        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+        if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') {
           $_SERVER['HTTPS'] = 'on';
         }
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost/wp-login.php >/dev/null || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost/wp-login.php >/dev/null || exit 1" ]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -67,7 +67,7 @@ services:
       MARIADB_PASSWORD: ${DB_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      test: [ "CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$${MARIADB_ROOT_PASSWORD} --silent" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -76,17 +76,11 @@ services:
   redis:
     image: redis:7.2-alpine
     restart: unless-stopped
-    command:
-      [
-        "redis-server",
-        "--save", "60", "1",
-        "--loglevel", "warning",
-        "--maxmemory-policy", "allkeys-lru"
-      ]
+    command: [ "redis-server", "--save", "60", "1", "--loglevel", "warning", "--maxmemory-policy", "allkeys-lru" ]
     volumes:
       - wp_redis:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 10
