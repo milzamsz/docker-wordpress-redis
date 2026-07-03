@@ -9,12 +9,6 @@ services:
         condition: service_healthy
     ports:
       - "80"
-    command: >
-      bash -c " a2enmod rewrite headers remoteip && if [ ! -f /var/www/html/index.php ]; then
-        cp -a /usr/src/wordpress/. /var/www/html/;
-      fi && if [ ! -f /var/www/html/wp-config.php ] && [ -f /var/www/html/wp-config-docker.php ]; then
-        cp /var/www/html/wp-config-docker.php /var/www/html/wp-config.php;
-      fi && chown -R www-data:www-data /var/www/html && apache2-foreground "
     volumes:
       - wp_app:/var/www/html
       - ../files/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
@@ -39,12 +33,13 @@ services:
         define('WP_CACHE', true);
 
         define('DISABLE_WP_CRON', true);
+
     healthcheck:
-      test: [ "CMD-SHELL", "test -f /var/www/html/wp-config.php && test -f /var/www/html/wp-login.php || exit 1" ]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost/wp-login.php >/dev/null || exit 1" ]
       interval: 30s
       timeout: 5s
-      retries: 10
-      start_period: 90s
+      retries: 5
+      start_period: 40s
 
   db:
     image: mariadb:10.11
@@ -75,7 +70,7 @@ services:
   redis:
     image: redis:7.2-alpine
     restart: unless-stopped
-    command: [ "redis-server", "--save", "60", "1", "--loglevel", "warning", "--appendonly", "yes", "--maxmemory-policy", "allkeys-lru" ]
+    command: [ "redis-server", "--save", "60", "1", "--loglevel", "warning", "--maxmemory-policy", "allkeys-lru" ]
     volumes:
       - wp_redis:/data
     healthcheck:
@@ -93,6 +88,7 @@ services:
     ports:
       - "8080"
     environment:
+      # Optional UI defaults
       ADMINER_DEFAULT_SERVER: db
 
 volumes:
